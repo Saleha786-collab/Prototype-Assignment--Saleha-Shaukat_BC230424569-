@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+{% if current_user.is_authenticated %}
+    <div class="container">
+        <h2>Welcome, {{ current_user.username }}!</h2>
+        <p>The chatbot is now available in the bottom right corner.</p>
+    </div>
+{% else %}
+    <div class="container">
+        <h2>Welcome to our Restaurant</h2>
+        <p>Please <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('register') }}">register</a> to access our chatbot service.</p>
+    </div>
+{% endif %}
+<div class="hero-section">
+<img class="main_image" src="{{ url_for('static', filename='pexels-alleksana-6758382.jpg') }}">
+<div class="hero-text">
+    <h1>Welcome to our Foodies Restaurant</h1>
+    <p>Here at Foodies Restaurant, we serve the best dishes, offering a delightful experience for all food lovers. Come and explore our menu!</p>
+</div>
+</div>
+
+
+
+{% endblock %}

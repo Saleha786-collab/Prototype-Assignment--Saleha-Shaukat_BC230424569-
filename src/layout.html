@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Home page</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="navbar-left">
+                <a class="logo" href="{{url_for('home')}}">FOODies</a>
+            </div>
+        
+            <div class="navbar-right">
+                {% if current_user.is_authenticated %}
+                    <a class="navbar-link" href="{{ url_for('account') }}">Account</a>
+                    <a class="navbar-link" href="{{ url_for('logout') }}">Logout</a>
+                {% else %}
+                    <a class="navbar-link" href="{{ url_for('login') }}">Login</a>
+                    <a class="navbar-link" href="{{ url_for('register') }}">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+       
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flashes">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}
+        {% endblock %}
+
+        <!-- Dialogflow Messenger - Only show for authenticated users -->
+        {% if current_user.is_authenticated %}
+        <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+        <df-messenger
+        chat-title="RestaurantChatbot"
+        agent-id="f30282d2-c43e-4bab-a93d-50617fcf567e"
+        language-code="en"
+        ></df-messenger>
+        {% endif %}
+    </body>
+</html>
