@@ -1,96 +1,93 @@
-Project Overview:
-This project is an AI-powered restaurant chatbot built using Google Dialog flow, Flask (Python), and HTML/CSS and javascript. The chatbot handles customer queries like checking order status, viewing the menu, and general restaurant information.  The main goal is to provide users with an easy and efficient way to get information such as order status, product-related inquiries, and technical support through a conversational interface. It is designed to improve user experience by providing automated, real-time responses.
-Key Features:
-Order Status: Users can check the status of their orders by providing the order ID.
+This project is an AI-powered restaurant chatbot built using Google Dialogflow, Flask (Python), and HTML/CSS with JavaScript. The chatbot handles customer requests like checking order status, reserving tables, and asking about menu items. It aims to simplify customer service by giving instant, helpful answers.
 
+Repo Structure Note:
+The repository includes docs and schema folders first for documentation and database design clarity, followed by the src folder which contains all the core source code (app.py, model.py, etc.).
 
-Product Information: Users can inquire about product availability, pricing, and details.
+Key Features
+Order Status
+Users can ask for their order update by sharing the order ID.
 
+Product Information
+Bot tells if a menu item is available and its price.
 
-Technical Support: The chatbot assists in troubleshooting common technical issues or creates support tickets for further assistance.
+Table Reservation
+User gives date, time, and guests, and the bot books the table.
 
+Technical Support
+When users face issues, the bot creates support tickets.
 
-Greeting & Farewell: The chatbot offers a friendly welcome and ends the conversation with a polite farewell message.
+Greetings & Farewells
+Friendly messages at the start and end of each chat.
 
-Setup Instructions:
+How to Set Up
+Clone this repository
 
-Clone the repository:
-Open your terminal and run:
-https://github.com/Saleha786-collab/Prototype-Assignment--Saleha-Shaukat_BC230424569-.git
-Create a Virtual Environment
+bash
+Copy
+Edit
+git clone https://github.com/Saleha786-collab/Prototype-Assignment--Saleha-Shaukat_BC230424569-.git
+cd Prototype-Assignment--Saleha-Shaukat_BC230424569-
+Create and activate a virtual environment
+
+bash
+Copy
+Edit
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
+Install dependencies
 
-
-
-Install required dependencies: Navigate to the project directory and install the necessary Python libraries.
+bash
+Copy
+Edit
 pip install -r requirements.txt
+Run the Flask app
 
- Run the App
+bash
+Copy
+Edit
 python3 app.py
+Dialogflow Integration
+Agent: Set up in Dialogflow for restaurant-specific needs
 
-     3. Chatbot Dialog flow Integration Details:
-Dialog flow Project: Integrated with a Dialogflow agent set up for restaurant use cases.
+Webhook: Connected to Flask for backend logic
 
+Handled Intents:
 
-Intent Used: OrderStatusIntent for order checking.
+Order status checking
 
+Placing orders
 
-Webhook: Connected via Flask backend using dialogflow_fulfillment.
+Table reservations
 
+Reporting issues
 
-Responses: Based on training phrases and entities mapped in Dialog flow.
+Responses: Controlled through Flask and returned based on Dialogflow input
 
+What I Learned
+Building a chatbot with Dialogflow + Flask integration
 
-Backend: app.py manages intent routing, response handling, and server setup.
+Handling user intents and context with webhooks
 
+Querying and updating a real database through conversational input
 
-Frontend: Simple user interface built with HTML/CSS for user interaction.
+Designing smooth, user-friendly chatbot flows
+ Future Improvements
+Add more chatbot features like:
 
-   4. Reflection and Learning:
-Reflection and Learning
-Through this project, I learned:
-How to create a chatbot using Dialog flow and connect it with a Flask backend.
+Let users cancel or change their orders
 
+Ask users for feedback after a chat
 
-How to handle intents and webhooks programmatically.
+Improvements for Fast Food Orders:
 
+Suggest popular combos and meal deals
 
-How to style and structure HTML pages and integrate them with backend responses.
+Help users quickly reorder their past meals
 
+Support large group orders for parties or events
 
-The importance of error handling and smooth conversation flow in chatbots.
+Show calorie details for food items
 
-Future Work
-Add support for more intents like:
+Recommend extras like fries, drinks, or sauces
 
-
-Book Table
-
-
-Take Order
-
-
-Modify Order
-
-
-Cancel Order
-
-
-Give Feedback
-
-
-Improve the UI with better design using HTML/CSS/JavaScript.
-
-
-Develop a customer dashboard with role-based access control.
-
-
-
-
-
-
-
-
-
-
+Make the website look better and work well on mobile phones
