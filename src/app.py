@@ -134,6 +134,10 @@ def webhook():
         return Order_taking(req)
     elif intent == 'product related query':
         return product_query(req)
+    elif intent == 'Order taking intent - add':
+        return Order_taking_add(req)
+    elif intent == 'Order taking intent - cancel':
+        return cancel_order(req)
     
 
     return fallback_response()
@@ -250,45 +254,11 @@ def product_query(req):
 
     if product:
         if product.stock.lower() == 'available':
-            text = f"The {product.name} is currently available. It costs ${product.price}."
-
-
+            text = f"The {product.name} is currently available. It costs Rs. {product.price}."
         else:
             text = f"Currently, the {product.name} is out of stock. Would you like me to notify you when it's back?"
-            return jsonify({
-                "fulfillmentText": text,  
-                "fulfillmentMessages": [
-                    {
-                        "text": {
-                            "text": [text]  
-                        }
-                    },
-                    {
-                        "payload": {
-                            "richContent": [
-                                [
-                                    {
-                                        "type": "chips",
-                                        "options": [
-                                            {
-                                                "text": "No",
-                                                "postback": "Ending Conversation Intent"
-                                            },
-                                            {
-                                                "text": "Yes",
-                                                "postback": "notify "
-                                            }
-                                        ]
-                                    }
-                                ]
-                            ]
-                        }
-                    }
-                ]
-            })
-
-    else:
-        text = f"Sorry,product is not in our menu you can see our menu by writing i want to see your menu"
+        
+        
         return jsonify({
             "fulfillmentText": text,
             "fulfillmentMessages": [
@@ -299,6 +269,20 @@ def product_query(req):
                 }
             ]
         })
+
+    else:
+        text = "Sorry, this product is not in our menu. You can see our full menu by saying 'show me the menu'."
+        return jsonify({
+            "fulfillmentText": text,
+            "fulfillmentMessages": [
+                {
+                    "text": {
+                        "text": [text]
+                    }
+                }
+            ]
+        })
+
 
 def Table_reservation(req):
     try:
@@ -337,7 +321,7 @@ def Table_reservation(req):
 
         # Save to database
         new_reservation = TableReservation(
-            user_id=None,  
+            user_id=None,  # If you have user login, replace None with actual user ID
             date=reservation_date,
             time=reservation_time,
             guests=guests
@@ -345,10 +329,14 @@ def Table_reservation(req):
         db.session.add(new_reservation)
         db.session.commit()
 
+        # Get reservation ID after commit
+        reservation_id = new_reservation.id
+
         return jsonify({
             'fulfillmentText': (
                 f"Your table for {guests} guest(s) on {reservation_date.strftime('%d %B %Y')} "
-                f"at {reservation_time.strftime('%I:%M %p')} has been reserved!"
+                f"at {reservation_time.strftime('%I:%M %p')} has been reserved! "
+                f"Your reservation ID is #{reservation_id}."
             )
         })
 
@@ -406,13 +394,104 @@ def Order_taking(req):
         db.session.commit()
 
         return jsonify({
-            'fulfillmentText': f"✅ Your order for {quantity} unit(s) of '{product.name}' has been placed. Your order ID is {new_order.order_id}."
+            'fulfillmentText': f"Your order for {quantity} unit(s) of '{product.name}' has been placed. Your order ID is {new_order.order_id}."
         })
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error in Order_taking: {str(e)}")
-        return jsonify({'fulfillmentText': "❌ There was an error placing your order. Please try again."})
+        return jsonify({'fulfillmentText': "There was an error placing your order. Please try again."})
+
+
+
+def Order_taking_add(req):
+    try:
+        parameters = req['queryResult'].get('parameters', {})
+        contexts = req['queryResult'].get('outputContexts', [])
+        
+        order_id = parameters.get('order_id')
+        product_name = parameters.get('ProductName') or parameters.get('productname')
+        quantity = parameters.get('quantity') or parameters.get('number')
+
+        # Convert product name from list to string if needed
+        if isinstance(product_name, list):
+            product_name = ' '.join(product_name).strip()
+
+        # Extract from contexts if missing
+        for ctx in contexts:
+            ctx_params = ctx.get('parameters', {})
+            if not order_id:
+                order_id = ctx_params.get('order_id')
+            if not product_name:
+                product_name = ctx_params.get('ProductName') or ctx_params.get('productname')
+                if isinstance(product_name, list):
+                    product_name = ' '.join(product_name).strip()
+            if not quantity:
+                quantity = ctx_params.get('quantity') or ctx_params.get('number')
+
+        # Validate all required fields
+        if not order_id:
+            return jsonify({'fulfillmentText': "Please provide your order ID to add items."})
+        if not product_name:
+            return jsonify({'fulfillmentText': "Which product would you like to add?"})
+        if not quantity:
+            return jsonify({'fulfillmentText': f"How many units of {product_name} would you like to add?"})
+
+        # Validate order and product
+        order = db.session.get(Order, order_id)
+
+        if not order:
+            return jsonify({'fulfillmentText': f"No order found with ID {order_id}."})
+
+        product = Product.query.filter(Product.name.ilike(f"%{product_name}%")).first()
+        if not product:
+            return jsonify({'fulfillmentText': f"Product '{product_name}' not found in our menu."})
+
+        # Add item to order
+        new_item = OrderItem(order_id=order.order_id, product_id=product.product_id, quantity=int(quantity))
+        db.session.add(new_item)
+        db.session.commit()
+
+        return jsonify({
+            'fulfillmentText': f"Added {quantity} unit(s) of '{product.name}' to your order #{order_id}."
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error in Order_taking_add: {str(e)}")
+        return jsonify({'fulfillmentText': "Sorry, there was a problem adding that item. Please try again."})
+
+
+def cancel_order(req):
+    try:
+        parameters = req['queryResult'].get('parameters', {})
+        contexts = req['queryResult'].get('outputContexts', [])
+
+        order_id = parameters.get('order_id')
+
+        for ctx in contexts:
+            if not order_id:
+                order_id = ctx.get('parameters', {}).get('order_id')
+
+        if not order_id:
+            return jsonify({'fulfillmentText': "Please provide the order ID you want to cancel."})
+
+        order = db.session.get(Order, order_id)
+        if not order:
+            return jsonify({'fulfillmentText': f"No order found with ID #{order_id}."})
+
+        # Delete all items in the order first
+        db.session.query(OrderItem).filter_by(order_id=order_id).delete()
+        db.session.delete(order)
+        db.session.commit()
+
+        return jsonify({'fulfillmentText': f"Your order #{order_id} has been successfully canceled."})
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error canceling order: {e}")
+        return jsonify({'fulfillmentText': "Failed to cancel the order. Please try again later."})
+
 
 
 
