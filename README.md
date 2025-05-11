@@ -45,7 +45,7 @@ cd src
 ## Run your Flask app
 python app.py
      Your chatbot will run on:
-     http://127.0.0.1:5000/Home
+     http://127.0.0.1:5000/home
 
 
 
