@@ -20,32 +20,29 @@ For Mac: source venv/bin/activate And for Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
 
-## Open your project folder → go to src/app.py
+## Open your project folder and go to src/app.py
  Find the line with database settings and change it to:
 
 
-##python
+python
 CopyEdit
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:password@localhost/db'
 
 Replace password with your real MySQL password.
 ## Set up your MySQL database:
 
-
 Open MySQL
-
 
 Create a database named db
 
-
 Import the database file:
 
-
 mysql -u root -p db < db/db.sql
+
 ## Run Instructions
-##Go to the src folder
+Go to the src folder
 cd src
-##Run your Flask app
+## Run your Flask app
 python app.py
      Your chatbot will run on:
      http://127.0.0.1:5000/Home
