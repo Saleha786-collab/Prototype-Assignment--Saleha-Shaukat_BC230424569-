@@ -1,9 +1,5 @@
 ## Setup Instructions
 
-## Go to your GitHub project:
-
-
-https://github.com/Prototype-Assignment--Saleha-Shaukat_BC230424569-
 ## Clone the repository:
 
 https://github.com/Saleha786-collab/Prototype-Assignment--Saleha-Shaukat_BC230424569-.git
