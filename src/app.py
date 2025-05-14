@@ -285,65 +285,27 @@ def product_query(req):
 
 
 def Table_reservation(req):
-    try:
-        parameters = req['queryResult'].get('parameters', {})
-        logging.debug(f"Parameters received: {parameters}")
+    params=req['queryResult']['parameters']
+    number_of_people=params.get('number')
+    time=params.get('time')
+    date=params.get('date')
 
-        guests = parameters.get('number')
-        date_str = parameters.get('date')
-        time_str = parameters.get('time')
+    if not number_of_people:
+        return jsonify({"fulfillmentText":"Please provide the no of people for that you want to reserve?"}) 
+    if not time:
+        return jsonify({"fulfillmentText":"What time of reservation do you want to reserve for?"}) 
+    if not date:
+        return jsonify({"fulfillmentText":"What is the date of reservation you want to reserve for?"})
 
-        # Validate and prompt for missing fields
-        if not date_str:
-            return jsonify({'fulfillmentText': "Please tell me the date for your reservation."})
-        if not time_str:
-            return jsonify({'fulfillmentText': "What time should I reserve the table for?"})
-        if not guests:
-            return jsonify({'fulfillmentText': "How many guests should I reserve the table for?"})
+    text_response=f"Your reservation for {number_of_people} for the {date} {time} has been booked"
+    return  jsonify({
+			"fulfillmentText":text_response
+		
+})
 
-        try:
-            guests = int(guests)
-        except (ValueError, TypeError):
-            return jsonify({'fulfillmentText': "Please provide a valid number of guests (e.g., 2, 4, 6)."})
 
-        # Parse date and time safely
-        try:
-            reservation_date = isoparse(date_str).date()
-        except Exception as e:
-            logging.error(f"Invalid date format: {date_str} - {e}")
-            return jsonify({'fulfillmentText': "Please provide a valid reservation date."})
 
-        try:
-            reservation_time = isoparse(time_str).time()
-        except Exception as e:
-            logging.error(f"Invalid time format: {time_str} - {e}")
-            return jsonify({'fulfillmentText': "Please provide a valid reservation time."})
-
-        # Save to database
-        new_reservation = TableReservation(
-            user_id=None,  # If you have user login, replace None with actual user ID
-            date=reservation_date,
-            time=reservation_time,
-            guests=guests
-        )
-        db.session.add(new_reservation)
-        db.session.commit()
-
-        # Get reservation ID after commit
-        reservation_id = new_reservation.id
-
-        return jsonify({
-            'fulfillmentText': (
-                f"Your table for {guests} guest(s) on {reservation_date.strftime('%d %B %Y')} "
-                f"at {reservation_time.strftime('%I:%M %p')} has been reserved! "
-                f"Your reservation ID is #{reservation_id}."
-            )
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Unexpected error in Table_reservation: {str(e)}")
-        return jsonify({'fulfillmentText': "Sorry, something went wrong while reserving your table."})
+ 
     
 
 def Order_taking(req):
