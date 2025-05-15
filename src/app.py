@@ -283,29 +283,53 @@ def product_query(req):
             ]
         })
 
-
 def Table_reservation(req):
-    params=req['queryResult']['parameters']
-    number_of_people=params.get('number')
-    time=params.get('time')
-    date=params.get('date')
+    params = req['queryResult']['parameters']
+    number_of_guests = params.get('number')
+    date_str = params.get('date')   
+    time_str = params.get('time')  
 
-    if not number_of_people:
-        return jsonify({"fulfillmentText":"Please provide the no of people for that you want to reserve?"}) 
-    if not time:
-        return jsonify({"fulfillmentText":"What time of reservation do you want to reserve for?"}) 
-    if not date:
-        return jsonify({"fulfillmentText":"What is the date of reservation you want to reserve for?"})
+    # Handle list inputs from Dialogflow
+    if isinstance(date_str, list):
+        date_str = date_str[0]
+    if isinstance(time_str, list):
+        time_str = time_str[0]
 
-    text_response=f"Your reservation for {number_of_people} for the {date} {time} has been booked"
-    return  jsonify({
-			"fulfillmentText":text_response
-		
-})
+    if not number_of_guests:
+        return jsonify({"fulfillmentText": "Please provide the number of guests to reserve the table for."})
+    if not date_str:
+        return jsonify({"fulfillmentText": "Please tell me the date you want to reserve for."})
+    if not time_str:
+        return jsonify({"fulfillmentText": "Please tell me the time you want to reserve for."})
+
+    try:
+        reservation_date = datetime.fromisoformat(date_str).date()
+        reservation_time = datetime.fromisoformat(time_str).time()
+        formatted_date = reservation_date.strftime("%d %B %Y")  # 03 May 2026
+        formatted_time = reservation_time.strftime("%I:%M %p")  # 05:00 PM
+
+        reservation = TableReservation(
+            guests=number_of_guests,
+            date=reservation_date,
+            time=reservation_time
+        )
+
+        db.session.add(reservation)
+        db.session.commit()
+
+        response_text = (
+            f"Your table for {number_of_guests} on {formatted_date} at {formatted_time} "
+            f"is confirmed! Your reservation ID is {reservation.id}."
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        print("ERROR:", e)
+        response_text = "Something went wrong while booking your reservation. Please try again later."
+
+    return jsonify({"fulfillmentText": response_text})
 
 
-
- 
     
 
 def Order_taking(req):
