@@ -282,49 +282,64 @@ def product_query(req):
                 }
             ]
         })
-
 def Table_reservation(req):
     params = req['queryResult']['parameters']
     number_of_guests = params.get('number')
-    date_str = params.get('date')   
-    time_str = params.get('time')  
+    date = params.get('date')   
+    time = params.get('time')
+    email = params.get('email')
 
-    # Handle list inputs from Dialogflow
-    if isinstance(date_str, list):
-        date_str = date_str[0]
-    if isinstance(time_str, list):
-        time_str = time_str[0]
+    
+    if isinstance(date, list):
+        date = date[0]
+    if isinstance(time, list):
+        time = time[0]
 
+   
     if not number_of_guests:
         return jsonify({"fulfillmentText": "Please provide the number of guests to reserve the table for."})
-    if not date_str:
+    if not date:
         return jsonify({"fulfillmentText": "Please tell me the date you want to reserve for."})
-    if not time_str:
+    if not time:
         return jsonify({"fulfillmentText": "Please tell me the time you want to reserve for."})
+    if not email:
+        return jsonify({"fulfillmentText": "Can you please provide your email for booking the table?"})
 
     try:
-        reservation_date = datetime.fromisoformat(date_str).date()
-        reservation_time = datetime.fromisoformat(time_str).time()
-        formatted_date = reservation_date.strftime("%d %B %Y")  # 03 May 2026
-        formatted_time = reservation_time.strftime("%I:%M %p")  # 05:00 PM
+        
+        reservation_date = datetime.fromisoformat(date).date()
+        reservation_time = datetime.fromisoformat(time).time()
+        formatted_date = reservation_date.strftime("%d %B %Y")  
+        formatted_time = reservation_time.strftime("%I:%M %p")  
 
+        # Check if the user exists in the database
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({
+                "fulfillmentText": "Your email is not valid. Please enter the login email you use for your account."
+            })
+
+        user_id = user.user_id  # Get the user_id
+
+        # Create the table reservation
         reservation = TableReservation(
             guests=number_of_guests,
             date=reservation_date,
-            time=reservation_time
+            time=reservation_time,
+            user_id=user_id
         )
 
         db.session.add(reservation)
         db.session.commit()
 
+        # Prepare the response message
         response_text = (
             f"Your table for {number_of_guests} on {formatted_date} at {formatted_time} "
             f"is confirmed! Your reservation ID is {reservation.id}."
         )
 
     except Exception as e:
-        db.session.rollback()
-        print("ERROR:", e)
+        db.session.rollback()  
         response_text = "Something went wrong while booking your reservation. Please try again later."
 
     return jsonify({"fulfillmentText": response_text})
