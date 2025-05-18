@@ -150,42 +150,29 @@ def Default_Welcome(req):
     return jsonify({'fulfillmentText': response})
 
 def handle_order_status(req):
+    params=req['queryResult']['parameters']
+    order_id=params.get('order_id')
+    if not order_id:
+        return jsonify({
+            'fulfillmentText':'Can you please provide your order_id?'
+        })
     try:
-       
-        logging.debug(f"Full Request: {req}")
-        
-        # Extract parameters safely
-        parameters = req.get('queryResult', {}).get('parameters', {})
-        order_id = parameters.get('order_id')
-
-        logging.debug(f"Extracted Order ID: {order_id}")
-
-        if not order_id:
-            
-            return jsonify({'fulfillmentText': "Please provide an Order ID."})
-
-        try:
-            
-            order_id = int(order_id)  
-            logging.debug(f"Order ID after conversion: {order_id}")
-        except ValueError:
-            return jsonify({'fulfillmentText': "Invalid Order ID format. Please provide a valid number."})
-
-        # Query the order from the database
-        order = Order.query.get(order_id)
-        logging.debug(f"Order found in database: {order}")
-
-        if order:
-            delivery_date = order.delivery_date.strftime("%d %B %Y") if order.delivery_date else "not set"
-            return jsonify({
-                'fulfillmentText': f"Order #{order_id}\nStatus: {order.order_status}\nDelivery: {delivery_date} Would you like anything else?"
-            })
-        else:
-            return jsonify({'fulfillmentText': f"No order found with ID {order_id}"})
-
-    except Exception as e:
-        logging.error(f"Error processing order status: {str(e)}")
-        return jsonify({'fulfillmentText': "System error. Contact support."})
+        order_id=int(order_id)
+    except ValueError:
+        return jsonify({
+            'fulfillmentText':'This order id is not valid.Please provide the valid order_id'
+        })
+    order=Order.query.filter_by(order_id=order_id).first()
+    if not order:
+        return jsonify({
+            'fulfillmentText':'We have not any order with this order_id please check your order id again'
+        })
+    
+    if order:
+        delivery_date = order.delivery_date.strftime("%d %B %Y %I:%M %p") if order.delivery_date else "your order delivery status will be upload soon"
+        return jsonify({
+        'fulfillmentText': f'''The order status of your order is {order.order_status} and order delivery time is {delivery_date}'''
+    })
 
 
 
