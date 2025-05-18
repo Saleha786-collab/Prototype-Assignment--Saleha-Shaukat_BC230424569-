@@ -481,34 +481,48 @@ def Order_taking_add(req):
 
 
 def cancel_order(req):
-    try:
-        parameters = req['queryResult'].get('parameters', {})
-        contexts = req['queryResult'].get('outputContexts', [])
+    params = req['queryResult']['parameters']
+    order_id = params.get('order_id')
+    
+    if not order_id:
+        return jsonify({
+            "fulfillmentText": "Can you please tell your order_id?"
+        })
+    
+    try:    
+        order_id = int(order_id)  
+    except:
+        return jsonify({
+            "fulfillmentText": "Your order_id is not valid. Please provide a valid order_id."
+        })
 
-        order_id = parameters.get('order_id')
+    
+    cancel_order_id = Order.query.filter_by(order_id=order_id).first()
+    
+    if not cancel_order_id:
+        return jsonify({
+            "fulfillmentText": "I could not find your order_id. Please check your order_id again."
+        })
+    
+    # Fetch the related products from the OrderItem table
+    order_items = OrderItem.query.filter_by(order_id=cancel_order_id.order_id).all()
+    if not order_items:
+        return jsonify({
+            "fulfillmentText": "No items found for this order."
+        })
 
-        for ctx in contexts:
-            if not order_id:
-                order_id = ctx.get('parameters', {}).get('order_id')
+    # Delete the order
+    db.session.delete(cancel_order_id)
+    db.session.commit()
 
-        if not order_id:
-            return jsonify({'fulfillmentText': "Please provide the order ID you want to cancel."})
+    # Prepare the response text with product names
+    product_names = ', '.join([item.product.name for item in order_items])
 
-        order = db.session.get(Order, order_id)
-        if not order:
-            return jsonify({'fulfillmentText': f"No order found with ID #{order_id}."})
+    response_text = f"Your order with ID {cancel_order_id.order_id} has been cancelled. The order contained: {product_names}. The order has been successfully removed from our system."
 
-        # Delete all items in the order first
-        db.session.query(OrderItem).filter_by(order_id=order_id).delete()
-        db.session.delete(order)
-        db.session.commit()
-
-        return jsonify({'fulfillmentText': f"Your order #{order_id} has been successfully canceled."})
-
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error canceling order: {e}")
-        return jsonify({'fulfillmentText': "Failed to cancel the order. Please try again later."})
+    return jsonify({
+        "fulfillmentText": response_text
+    })
 
 
 
