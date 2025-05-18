@@ -80,13 +80,15 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     order_status = db.Column(db.Enum('pending', 'shipped', 'delivered'), default='pending')
     order_date = db.Column(db.DateTime, default=datetime.utcnow)
-    delivery_date = db.Column(db.DateTime, nullable=True)  
+    delivery_date = db.Column(db.DateTime, nullable=True, default=lambda: datetime.utcnow() + timedelta(minutes=30))
+    name = db.Column(db.String(255)) 
 
     # Relationship 
     items = db.relationship('OrderItem', backref='order', lazy=True)
 
     def __repr__(self):
         return f'<Order {self.order_id}>'
+
 
    
 
