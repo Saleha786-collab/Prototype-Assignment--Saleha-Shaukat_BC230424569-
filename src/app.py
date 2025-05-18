@@ -333,60 +333,77 @@ def Table_reservation(req):
     
 
 def Order_taking(req):
+    params = req['queryResult']['parameters']
+    product_name = params.get('ProductName')
+    quantity = params.get('quantity')
+    email = params.get('email')
+
+
+    # Check if the product_name, quantity, and email are provided
+    if not product_name:
+        return jsonify({
+            "fulfillmentText": 'What product do you want to order?'
+        })
+    if not quantity:
+        return jsonify({
+            "fulfillmentText": f'How much {product_name} do you want to order?'
+        })
     try:
-        parameters = req['queryResult'].get('parameters', {})
-        contexts = req['queryResult'].get('outputContexts', [])
+        quantity = int(quantity)
+    except ValueError:
+        return jsonify({
+        "fulfillmentText": "Please provide a valid number for quantity."
+    })
+    if not email:
+        return jsonify({
+            "fulfillmentText": 'Can you please tell me your email for placing your order?'
+        })
 
-        product_name = parameters.get('ProductName') or parameters.get('productname')
-        quantity = parameters.get('quantity') or parameters.get('number')
-
-        for ctx in contexts:
-            ctx_params = ctx.get('parameters', {})
-            if not product_name:
-                product_name = ctx_params.get('ProductName') or ctx_params.get('productname')
-            if not quantity:
-                quantity = ctx_params.get('quantity') or ctx_params.get('number')
-
-        if not product_name:
-            return jsonify({'fulfillmentText': "Please specify the product you want to order."})
-
-        product = Product.query.filter(Product.name.ilike(f"%{product_name}%")).first()
+    try:
+        # Fetch the product from the database
+        product = Product.query.filter(Product.name.ilike(f'%{product_name}%')).first()
         if not product:
-            return jsonify({'fulfillmentText': f"Sorry, we couldn't find a product named '{product_name}'."})
+            return jsonify({
+                "fulfillmentText": f'{product_name} is not available in our menu. You can see our menu by typing "I want to see the menu" and order anything else from that menu. Thanks!'
+            })
 
-        # Check stock status from string
-        stock_status = (product.stock or "").strip().lower()
-        if stock_status != "available":
-            return jsonify({'fulfillmentText': f"Sorry, '{product.name}' is currently out of stock."})
+        
 
-        if quantity is None:
-            return jsonify({'fulfillmentText': f"'{product.name}' is available. How many units would you like to order?"})
+        # Check if the user exists in the database
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({
+                "fulfillmentText": "We couldn't find your account. Please check your account and send the email again."
+            })
 
-        try:
-            quantity = int(float(quantity))
-        except Exception:
-            return jsonify({'fulfillmentText': "Please provide a valid number for quantity."})
+       
 
-        if quantity <= 0:
-            return jsonify({'fulfillmentText': "Quantity must be at least 1."})
+        # Create a new order for the user
+        order = Order(user_id=user.user_id)
+        db.session.add(order)
+        db.session.flush()  # Get the order ID
 
-        # Proceed with creating the order
-        new_order = Order(user_id=None)
-        db.session.add(new_order)
-        db.session.commit()
-
-        order_item = OrderItem(order_id=new_order.order_id, product_id=product.product_id, quantity=quantity)
+        # Add the order item (product) to the order
+        order_item = OrderItem(order_id=order.order_id, product_id=product.product_id, quantity=quantity)
         db.session.add(order_item)
+
+     
         db.session.commit()
+
+      
+        product_name_plural = f"{product_name}s" if quantity > 1 else product_name  
+        text_response = f'Your order of {quantity} {product_name_plural} has been placed. Your order ID is {order.order_id}.'
 
         return jsonify({
-            'fulfillmentText': f"Your order for {quantity} unit(s) of '{product.name}' has been placed. Your order ID is {new_order.order_id}."
+            "fulfillmentText": text_response
         })
 
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Error in Order_taking: {str(e)}")
-        return jsonify({'fulfillmentText': "There was an error placing your order. Please try again."})
+        text_response = 'Due to a server issue, your order could not be placed. Please try again later.'
+        return jsonify({
+            "fulfillmentText": text_response
+        })
 
 
 
