@@ -504,18 +504,16 @@ def cancel_order(req):
             "fulfillmentText": "I could not find your order_id. Please check your order_id again."
         })
     
-    # Fetch the related products from the OrderItem table
+    
     order_items = OrderItem.query.filter_by(order_id=cancel_order_id.order_id).all()
     if not order_items:
         return jsonify({
             "fulfillmentText": "No items found for this order."
         })
 
-    # Delete the order
+    
     db.session.delete(cancel_order_id)
     db.session.commit()
-
-    # Prepare the response text with product names
     product_names = ', '.join([item.product.name for item in order_items])
 
     response_text = f"Your order with ID {cancel_order_id.order_id} has been cancelled. The order contained: {product_names}. The order has been successfully removed from our system."
