@@ -509,6 +509,49 @@ def cancel_order(req):
         "fulfillmentText": response_text
     })
 
+def add_order_item(req):
+    params = req['queryResult']['parameters']
+    product_name = params.get('productname')
+    quantity = params.get('quantity')
+    order_id = params.get('order_id')
+
+    if not product_name:
+        return jsonify({
+            "fulfillmentText": "What product do you want to add?"
+        })
+    if not quantity:
+        return jsonify({
+            "fulfillmentText": "How many quantity do you want to add?"
+        })
+    if not order_id:
+        return jsonify({
+            "fulfillmentText": "What is your order_id?"
+        })
+
+ 
+    order = Order.query.filter_by(order_id=order_id).first()
+    if not order:
+        return jsonify({
+            "fulfillmentText": "We could not find any order with this order_id. Please check your order_id again."
+        })
+
+    product = Product.query.filter_by(name=product_name).first()
+    if not product:
+        return jsonify({
+            "fulfillmentText": f"The product {product_name} is not available in our menu. Please choose another product."
+        })
+
+   
+    add_product = OrderItem(product_id=product.product_id, quantity=quantity, order_id=order_id)
+    db.session.add(add_product)
+    db.session.commit()
+
+   
+    text_response = f'Your product item {quantity} x {product_name} has been added to your order.'
+
+    return jsonify({
+        'fulfillmentText': text_response
+    })
 
 
 
