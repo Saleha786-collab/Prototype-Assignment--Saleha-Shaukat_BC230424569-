@@ -620,6 +620,35 @@ def remove_order_item(req):
         return jsonify({
             'fulfillmentText': f"The product {product_name} has been completely removed from your order."
         })
+    def cancel_table_reservation(req):
+    param = req['queryResult']['parameters']
+    reservation_id = param.get('reservation_id')
+
+    if not reservation_id:
+        return jsonify({
+            'fulfillmentText': 'Can you provide your reservation ID?'
+        })
+
+    reservation = TableReservation.query.filter_by(id=reservation_id).first()
+
+   
+    if not reservation:
+        return jsonify({
+            'fulfillmentText': 'Sorry, we could not find a reservation with that ID. Please check and provide a valid reservation ID.'
+        })
+
+
+    try:
+        db.session.delete(reservation)
+        db.session.commit()
+        text_response = f'Your reservation with ID {reservation.id} has been cancelled. Thanks!'
+        return jsonify({
+            'fulfillmentText': text_response
+        })
+    except Exception as e:
+        return jsonify({
+            'fulfillmentText': f"Sorry, there was an error canceling your reservation. Please try again later. Error: {str(e)}"
+        })
 
 def init_db():
     with app.app_context():
