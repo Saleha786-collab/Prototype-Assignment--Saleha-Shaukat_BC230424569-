@@ -138,7 +138,8 @@ def webhook():
         return Order_taking_add(req)
     elif intent == 'Order taking intent - cancel':
         return cancel_order(req)
-    
+    elif intent=='Remove order item':
+        return remove_order_item(req)
 
     return fallback_response()
 
@@ -553,7 +554,72 @@ def add_order_item(req):
         'fulfillmentText': text_response
     })
 
+def remove_order_item(req):
+    params = req['queryResult']['parameters']
+    product_name = params.get('productname')
+    quantity = params.get('quantity')
+    order_id = params.get('order_id')
 
+
+    try:
+        quantity = int(quantity)
+    except (ValueError, TypeError):
+        return jsonify({
+            'fulfillmentText': "Please provide a valid quantity."
+        })
+    
+    if not product_name:
+        return jsonify({
+            'fulfillmentText': "Please provide the product name that you want to remove"
+        })
+    
+    if not quantity or quantity <= 0:  
+       
+        return jsonify({
+            'fulfillmentText': "Can you please provide the quantity of the product that you want to remove? It should be a positive number."
+        })
+        
+    if not order_id:
+        return jsonify({
+            'fulfillmentText': "Can you please provide your existing order_id?"
+        })
+    
+    order = Order.query.filter_by(order_id=order_id).first()
+    if not order:
+        return jsonify({
+            'fulfillmentText': 'We could not find any order with this order_id. Please check your order_id again.'
+        })
+    
+    product = Product.query.filter_by(name=product_name).first()
+    if not product:
+        return jsonify({
+            'fulfillmentText': "This product is not available. Please provide another product name. You can see product names from our menu."
+        })
+    
+    order_item = OrderItem.query.filter_by(order_id=order_id, product_id=product.product_id).first()
+    if not order_item:
+        return jsonify({
+            'fulfillmentText': "No matching product found in the order. Please check the product name."
+        })
+
+    if order_item.quantity > quantity:
+        order_item.quantity -= quantity
+        db.session.commit()
+        return jsonify({
+            'fulfillmentText': f"{quantity} of {product_name} has been removed from your order."
+        })
+    elif order_item.quantity < quantity:
+        db.session.delete(order_item)
+        db.session.commit()
+        return jsonify({
+            'fulfillmentText': f"Your given quantity is greater than the quantity you have on your order. The product {order_item.quantity} has been completely removed from your order."
+        })
+    else:
+        db.session.delete(order_item)
+        db.session.commit()
+        return jsonify({
+            'fulfillmentText': f"The product {product_name} has been completely removed from your order."
+        })
 
 def init_db():
     with app.app_context():
