@@ -2,6 +2,9 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from datetime import datetime, timedelta
+from sqlalchemy import event
+
 
 # Initialize db and login_manager
 db = SQLAlchemy()
@@ -10,10 +13,10 @@ db = SQLAlchemy()
 # User Model
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
-    user_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255))  # Increase size if needed
+    password = db.Column(db.String(255))
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -23,11 +26,20 @@ class User(db.Model, UserMixin):
     inquiries = db.relationship('ProductInquiry', backref='user', lazy=True)
 
 
-    def get_id(self):
-        return str(self.user_id)
-
     def __repr__(self):
         return f'<User {self.username}>'
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+
+    # ← this must be indented exactly like the methods above
+    def get_id(self):
+        return str(self.user_id)
+    
+  
 
   
     def set_password(self, password):
@@ -79,10 +91,11 @@ class Order(db.Model):
     order_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     order_status = db.Column(db.Enum('pending', 'shipped', 'delivered'), default='pending')
-    order_date = db.Column(db.DateTime, default=datetime.utcnow)
-    delivery_date = db.Column(db.DateTime, nullable=True, default=lambda: datetime.utcnow() + timedelta(minutes=30))
+    order_date = db.Column(db.DateTime, default=datetime.now)  
+    delivery_date = db.Column(db.DateTime, nullable=True, default=lambda: datetime.now() + timedelta(minutes=30))  
     name = db.Column(db.String(255)) 
-
+     
+    
     # Relationship 
     items = db.relationship('OrderItem', backref='order', lazy=True)
 
@@ -90,7 +103,9 @@ class Order(db.Model):
         return f'<Order {self.order_id}>'
 
 
-   
+
+
+
 
 
 # OrderItem Model
@@ -100,6 +115,7 @@ class OrderItem(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     quantity = db.Column(db.Integer)
+    name = db.Column(db.String(255)) 
 
     def __repr__(self):
         return f'<OrderItem {self.order_item_id}>'
@@ -128,6 +144,13 @@ class TableReservation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user = db.relationship('User', backref='reservations')
 
+class RoomAvailability(db.Model):
+    __tablename__ = 'room_availability'
+    room_no        = db.Column(db.Integer, primary_key=True)
+    room_type      = db.Column(db.String(30), nullable=False)
+    room_available = db.Column(db.Boolean, nullable=False, default=True)
+    start_date     = db.Column(db.Date,    nullable=True)
+    end_date       = db.Column(db.Date,    nullable=True)
 def init_db(app):
     with app.app_context():
         db.create_all()
