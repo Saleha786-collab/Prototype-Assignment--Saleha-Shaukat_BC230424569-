@@ -6,12 +6,19 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime, time
 from sqlalchemy.exc import SQLAlchemyError 
-from sqlalchemy import text 
-from model import db, User, SupportTicket, Product, Order, OrderItem, ProductInquiry, TableReservation
+from sqlalchemy import text,and_, or_
+from model import db, User, SupportTicket, Product, Order, OrderItem, ProductInquiry, TableReservation,RoomAvailability
 from form import RegistrationForm, LoginForm, Accountform
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
-from dateutil.parser import isoparse  
+from dateutil.parser import isoparse,parse as parse_date
+from datetime import datetime, date, timedelta
+from collections import Counter
+
+
+
+ 
+
 # Configure logging
 if os.getenv("FLASK_ENV") == "development":
     logging.basicConfig(level=logging.DEBUG)
@@ -36,6 +43,7 @@ bcrypt = Bcrypt(app)
 # Initialize Login Manager
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -118,8 +126,6 @@ def webhook():
         return Issue_Not_Resolved(req)
     elif intent == 'Email Capture':
         return check_ticket_creation(req)
-    elif intent == 'Default Welcome Intent':
-        return Default_Welcome(req)
     elif intent == 'Invalid Input':
         return invalid_input(req)
     elif intent == 'Multiple Intents Detected':
@@ -133,22 +139,23 @@ def webhook():
     elif intent == 'Order taking intent':
         return Order_taking(req)
     elif intent == 'product related query':
-        return product_query(req)
-    elif intent == 'Order taking intent - add':
-        return Order_taking_add(req)
+        return product_inquiry(req)
     elif intent == 'Order taking intent - cancel':
         return cancel_order(req)
+    elif intent =='Add order item':
+        return add_order_item(req)
     elif intent=='Remove order item':
         return remove_order_item(req)
+    elif intent=='cancel table reservation':
+        return cancel_table_reservation(req)
+    elif intent=='Hotel Room Availability':
+        return room_availability(req)
+    
+
 
     return fallback_response()
 
-def Default_Welcome(req):
-    if current_user.is_authenticated:
-        response = f"Hello! Welcome to the Restaurant. How can I assist you today?"
-    else:
-        response = "Hello! Welcome to the Restaurant. How can I assist you today?"
-    return jsonify({'fulfillmentText': response})
+
 
 def handle_order_status(req):
     params=req['queryResult']['parameters']
@@ -174,8 +181,7 @@ def handle_order_status(req):
         return jsonify({
         'fulfillmentText': f'''The order status of your order is {order.order_status} and order delivery time is {delivery_date}'''
     })
-
-
+    
 
 def fallback_response():
     response = "I'm sorry, I didn't quite understand. Could you please rephrase your question?"
@@ -234,42 +240,8 @@ def Multiple_Intents_Detected(req):
     response = "I see you're asking about multiple things. Which one would you like to start with?"
     return jsonify({'fulfillmentText': response})
 
-def product_query(req):
-    parameters = req['queryResult']['parameters']
-    product_name = parameters.get('ProductName')
 
-    product = Product.query.filter_by(name=product_name).first()
 
-    if product:
-        if product.stock.lower() == 'available':
-            text = f"The {product.name} is currently available. It costs Rs. {product.price}."
-        else:
-            text = f"Currently, the {product.name} is out of stock. Would you like me to notify you when it's back?"
-        
-        
-        return jsonify({
-            "fulfillmentText": text,
-            "fulfillmentMessages": [
-                {
-                    "text": {
-                        "text": [text]
-                    }
-                }
-            ]
-        })
-
-    else:
-        text = "Sorry, this product is not in our menu. You can see our full menu by saying 'show me the menu'."
-        return jsonify({
-            "fulfillmentText": text,
-            "fulfillmentMessages": [
-                {
-                    "text": {
-                        "text": [text]
-                    }
-                }
-            ]
-        })
 def Table_reservation(req):
     params = req['queryResult']['parameters']
     number_of_guests = params.get('number')
@@ -333,8 +305,6 @@ def Table_reservation(req):
     return jsonify({"fulfillmentText": response_text})
 
 
-    
-
 def Order_taking(req):
     params = req['queryResult']['parameters']
     product_name = params.get('ProductName')
@@ -381,12 +351,12 @@ def Order_taking(req):
 
        
 
-        # Create a new order for the user
+
         order = Order(user_id=user.user_id)
         db.session.add(order)
-        db.session.flush()  # Get the order ID
+        db.session.flush()  
 
-        # Add the order item (product) to the order
+       
         order_item = OrderItem(order_id=order.order_id, product_id=product.product_id, quantity=quantity)
         db.session.add(order_item)
 
@@ -407,67 +377,6 @@ def Order_taking(req):
         return jsonify({
             "fulfillmentText": text_response
         })
-
-
-
-def Order_taking_add(req):
-    try:
-        parameters = req['queryResult'].get('parameters', {})
-        contexts = req['queryResult'].get('outputContexts', [])
-        
-        order_id = parameters.get('order_id')
-        product_name = parameters.get('ProductName') or parameters.get('productname')
-        quantity = parameters.get('quantity') or parameters.get('number')
-
-        # Convert product name from list to string if needed
-        if isinstance(product_name, list):
-            product_name = ' '.join(product_name).strip()
-
-        # Extract from contexts if missing
-        for ctx in contexts:
-            ctx_params = ctx.get('parameters', {})
-            if not order_id:
-                order_id = ctx_params.get('order_id')
-            if not product_name:
-                product_name = ctx_params.get('ProductName') or ctx_params.get('productname')
-                if isinstance(product_name, list):
-                    product_name = ' '.join(product_name).strip()
-            if not quantity:
-                quantity = ctx_params.get('quantity') or ctx_params.get('number')
-
-        # Validate all required fields
-        if not order_id:
-            return jsonify({'fulfillmentText': "Please provide your order ID to add items."})
-        if not product_name:
-            return jsonify({'fulfillmentText': "Which product would you like to add?"})
-        if not quantity:
-            return jsonify({'fulfillmentText': f"How many units of {product_name} would you like to add?"})
-
-        # Validate order and product
-        order = db.session.get(Order, order_id)
-
-        if not order:
-            return jsonify({'fulfillmentText': f"No order found with ID {order_id}."})
-
-        product = Product.query.filter(Product.name.ilike(f"%{product_name}%")).first()
-        if not product:
-            return jsonify({'fulfillmentText': f"Product '{product_name}' not found in our menu."})
-
-        # Add item to order
-        new_item = OrderItem(order_id=order.order_id, product_id=product.product_id, quantity=int(quantity))
-        db.session.add(new_item)
-        db.session.commit()
-
-        return jsonify({
-            'fulfillmentText': f"Added {quantity} unit(s) of '{product.name}' to your order #{order_id}."
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error in Order_taking_add: {str(e)}")
-        return jsonify({'fulfillmentText': "Sorry, there was a problem adding that item. Please try again."})
-
-
 def cancel_order(req):
     params = req['queryResult']['parameters']
     order_id = params.get('order_id')
@@ -492,23 +401,27 @@ def cancel_order(req):
             "fulfillmentText": "I could not find your order_id. Please check your order_id again."
         })
     
-    
+
     order_items = OrderItem.query.filter_by(order_id=cancel_order_id.order_id).all()
     if not order_items:
         return jsonify({
             "fulfillmentText": "No items found for this order."
         })
 
-    
+
     db.session.delete(cancel_order_id)
     db.session.commit()
+
+
     product_names = ', '.join([item.product.name for item in order_items])
+    
 
     response_text = f"Your order with ID {cancel_order_id.order_id} has been cancelled. The order contained: {product_names}. The order has been successfully removed from our system."
 
     return jsonify({
         "fulfillmentText": response_text
     })
+
 
 def add_order_item(req):
     params = req['queryResult']['parameters']
@@ -554,6 +467,9 @@ def add_order_item(req):
         'fulfillmentText': text_response
     })
 
+
+    
+    
 def remove_order_item(req):
     params = req['queryResult']['parameters']
     product_name = params.get('productname')
@@ -620,7 +536,9 @@ def remove_order_item(req):
         return jsonify({
             'fulfillmentText': f"The product {product_name} has been completely removed from your order."
         })
-    def cancel_table_reservation(req):
+
+
+def cancel_table_reservation(req):
     param = req['queryResult']['parameters']
     reservation_id = param.get('reservation_id')
 
@@ -650,6 +568,116 @@ def remove_order_item(req):
             'fulfillmentText': f"Sorry, there was an error canceling your reservation. Please try again later. Error: {str(e)}"
         })
 
+def product_inquiry(req):
+     params=req['queryResult']['parameters']
+     product_name=params.get('ProductName')
+     if not product_name:
+         return jsonify({
+             'fulfillmentText':'Can you please tell the name of product that you have to add'
+         })
+     product=Product.query.filter_by(name=product_name).first()
+     if not product:
+         return jsonify({
+            'fulfillmentText':f'This product is not in our menu you can order by seeing our menu'
+        })
+     if product.stock == 'Available':
+         return jsonify({
+            'fulfillmentText':f"{product_name} is in stock. The price of {product_name} is ${product.price}"
+        })
+     else:
+         return jsonify({
+            'fulfillmentText':f"Sorry currently {product_name} is not in stock.You can order anything esle.Thanks "
+        })
+    
+
+def normalize_date(val):
+    """
+    Turn Dialogflow’s parameter into a datetime.date:
+      - Handles lists by picking the first element
+      - Handles datetime.date or datetime.datetime directly
+      - Handles strings like "2025-04-30", "30 April", "1 may", etc.
+      - Returns None if parsing fails
+    """
+    
+    if isinstance(val, list) and val:
+        val = val[0]
+
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, date):
+        return val
+
+   
+    if isinstance(val, str):
+        s = val.strip().title()       
+        try:
+           
+            return parse_date(s, dayfirst=True).date()
+        except Exception:
+            
+            for fmt in ("%d %B", "%d %b"):
+                try:
+                    dt = datetime.strptime(s, fmt)
+                    return dt.replace(year=date.today().year).date()
+                except Exception:
+                    continue
+    return None
+
+def room_availability(req):
+    params = req['queryResult']['parameters']
+    sd_raw = params.get('start_date')
+    ed_raw = params.get('end_date')
+
+    
+    check_in = normalize_date(sd_raw)
+    if not check_in:
+        return jsonify({
+            'fulfillmentText': "Sorry, I couldn’t understand the check-in date. Please say something like “30 April” or “2025-04-30.”"
+        })
+
+    
+    if not ed_raw:
+        check_out = check_in + timedelta(days=1)
+    else:
+        check_out = normalize_date(ed_raw)
+        if not check_out:
+            return jsonify({
+                'fulfillmentText': "Sorry, I couldn’t understand the check-out date. Please try again."
+            })
+
+    
+    rooms = RoomAvailability.query.filter(
+        and_(
+            RoomAvailability.room_available == True,
+            or_(
+                RoomAvailability.start_date.is_(None),
+                RoomAvailability.end_date.is_(None),
+                RoomAvailability.end_date < check_in,
+                RoomAvailability.start_date > check_out
+            )
+        )
+    ).all()
+
+
+    if not rooms:
+        return jsonify({
+            'fulfillmentText': (
+                f"Sorry, no rooms free from "
+                f"{check_in:%d %b %Y} to {check_out:%d %b %Y}."
+            )
+        })
+
+ 
+    from collections import Counter
+    counts = Counter(r.room_type for r in rooms)
+    summary = ', '.join(f"{num} {rtype}" for rtype, num in counts.items())
+
+    return jsonify({
+        'fulfillmentText': (
+            f"Great! Available from {check_in:%d %b} to {check_out:%d %b}: "
+            f"{summary}."
+        )
+    })
 def init_db():
     with app.app_context():
         db.create_all()
