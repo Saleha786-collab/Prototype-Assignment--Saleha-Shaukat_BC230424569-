@@ -1,5 +1,26 @@
 create database db;
-use db;
+
+CREATE TABLE room_availability (
+    room_no        INT          PRIMARY KEY,
+    room_type      VARCHAR(30)  NOT NULL,
+    room_available TINYINT(1)   NOT NULL DEFAULT 1,
+    start_date     DATE         NULL,
+    end_date       DATE         NULL
+);
+show tables;
+select * from room_availability;
+INSERT INTO room_availability (room_no, room_type)
+VALUES
+  (101, 'Single'),
+  (102, 'Single'),
+  (103, 'Double'),
+  (104, 'Double'),
+  (105, 'Suite'),
+  (106, 'Suite'),
+  (107, 'Single'),
+  (108, 'Double'),
+  (109, 'Suite'),
+  (110, 'Single');
 
 CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -45,7 +66,15 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_date TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+ALTER TABLE orders
+ADD COLUMN name VARCHAR(255);
+
+UPDATE orders 
+SET order_status = 'delivered'
+WHERE delivery_date <= NOW() AND order_status = 'pending';
+
 select * from orders;
+select * from products;
 
 -- Insert test order with delivery date
 INSERT INTO orders (user_id, order_status, delivery_date) 
@@ -62,10 +91,11 @@ CREATE TABLE IF NOT EXISTS order_items (
     quantity INT,
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (product_id) REFERENCES products(product_id)
+
 );
+ALTER TABLE order_items ADD COLUMN name VARCHAR(255);
 
-
-
+select * from order_items;
 -- ProductInquiry Table
 CREATE TABLE IF NOT EXISTS product_inquiries (
     inquiry_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -88,3 +118,25 @@ CREATE TABLE IF NOT EXISTS table_reservation (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+select * from table_reservation;
+DELIMITER //
+
+CREATE TRIGGER update_order_status_after_delivery
+AFTER UPDATE ON orders
+FOR EACH ROW
+BEGIN
+    IF NEW.delivery_date <= NOW() AND NEW.order_status = 'pending' THEN
+        UPDATE orders
+        SET order_status = 'delivered'
+        WHERE order_id = NEW.order_id;
+    END IF;
+END //
+
+DELIMITER ;
+SELECT * FROM orders WHERE order_status = 'pending' AND delivery_date <= NOW();
+
+
+
+
+
+
