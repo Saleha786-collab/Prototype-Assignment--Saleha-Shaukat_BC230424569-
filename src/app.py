@@ -15,17 +15,12 @@ from dateutil.parser import isoparse,parse as parse_date
 from datetime import datetime, date, timedelta
 from collections import Counter
 
-
-
- 
-
-# Configure logging
 if os.getenv("FLASK_ENV") == "development":
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.WARNING)
 
-# Initialize Flask app
+
 app = Flask(__name__)
 
 
