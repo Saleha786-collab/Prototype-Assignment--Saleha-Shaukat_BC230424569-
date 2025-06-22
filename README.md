@@ -10,7 +10,9 @@ cd Prototype-Assignment--Saleha-Shaukat_BC230424569-
 
 python -m venv venv
 
-For Mac: source venv/bin/activate And for Windows: venv\Scripts\activate
+For Mac: source venv/bin/activate 
+And 
+for Windows: venv\Scripts\activate
 
  ## Install dependencies:
 
@@ -20,8 +22,6 @@ pip install -r requirements.txt
  Find the line with database settings and change it to:
 
 
-python
-CopyEdit
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:password@localhost/db'
 
 Replace password with your real MySQL password.
@@ -40,7 +40,9 @@ Go to the src folder
 cd src
 ## Run your Flask app
 python app.py
-     Your chatbot will run on:
+     
+     
+ ## Your chatbot will run on:
      http://127.0.0.1:5000/home
 
 
