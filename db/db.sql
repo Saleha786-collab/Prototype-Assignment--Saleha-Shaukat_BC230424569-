@@ -1,5 +1,5 @@
 create database db;
-
+use db;
 CREATE TABLE room_availability (
     room_no        INT          PRIMARY KEY,
     room_type      VARCHAR(30)  NOT NULL,
@@ -7,20 +7,27 @@ CREATE TABLE room_availability (
     start_date     DATE         NULL,
     end_date       DATE         NULL
 );
-show tables;
-select * from room_availability;
-INSERT INTO room_availability (room_no, room_type)
+
+INSERT INTO room_availability (room_no, room_type, price)
 VALUES
-  (101, 'Single'),
-  (102, 'Single'),
-  (103, 'Double'),
-  (104, 'Double'),
-  (105, 'Suite'),
-  (106, 'Suite'),
-  (107, 'Single'),
-  (108, 'Double'),
-  (109, 'Suite'),
-  (110, 'Single');
+  (101, 'Single', 2000),
+  (102, 'Single', 2000),
+  (103, 'Double', 6000),
+  (104, 'Double', 6000),
+  (105, 'Suite', 7000),
+  (106, 'Suite', 7000),
+  (107, 'Single', 2000),
+  (108, 'Double', 6000),
+  (109, 'Suite', 7000),
+  (110, 'Single', 2000);
+
+select* from room_availability;
+
+select* from room_reservation;
+
+
+ALTER TABLE room_availability
+ADD COLUMN price FLOAT NOT NULL;
 
 CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,7 +115,7 @@ CREATE TABLE IF NOT EXISTS product_inquiries (
     FOREIGN KEY (product_id) REFERENCES products(product_id)
 );
 
-select * from support_tickets;
+select * from product_inquiries;
 CREATE TABLE IF NOT EXISTS table_reservation (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -134,6 +141,16 @@ END //
 
 DELIMITER ;
 SELECT * FROM orders WHERE order_status = 'pending' AND delivery_date <= NOW();
+CREATE TABLE room_reservation (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    check_in DATE NOT NULL, 
+    check_out DATE NOT NULL,  
+    room_type VARCHAR(30) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+
 
 
 
