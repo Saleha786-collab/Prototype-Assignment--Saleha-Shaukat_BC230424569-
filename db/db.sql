@@ -126,29 +126,10 @@ CREATE TABLE IF NOT EXISTS table_reservation (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 select * from table_reservation;
-DELIMITER //
 
-CREATE TRIGGER update_order_status_after_delivery
-AFTER UPDATE ON orders
-FOR EACH ROW
-BEGIN
-    IF NEW.delivery_date <= NOW() AND NEW.order_status = 'pending' THEN
-        UPDATE orders
-        SET order_status = 'delivered'
-        WHERE order_id = NEW.order_id;
-    END IF;
-END //
 
-DELIMITER ;
-SELECT * FROM orders WHERE order_status = 'pending' AND delivery_date <= NOW();
-CREATE TABLE room_reservation (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    check_in DATE NOT NULL, 
-    check_out DATE NOT NULL,  
-    room_type VARCHAR(30) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+
+
 
 
 
