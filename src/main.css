@@ -2,6 +2,8 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden; 
+    padding-top: 30px; 
+    
 }
 
 .main_image {
@@ -15,14 +17,17 @@ html, body {
 }
  
 .navbar {
-    width: 100%;        
-    margin: 0 auto;      
-    padding: 15px 30px;
-    background: rgb(247, 247, 247);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: #f7f7f7;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .navbar-left .logo {
