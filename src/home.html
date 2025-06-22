@@ -1,3 +1,4 @@
+
 {% extends 'layout.html' %}
 {% block content %}
 
@@ -12,11 +13,49 @@
         <p>Please <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('register') }}">register</a> to access our chatbot service.</p>
     </div>
 {% endif %}
+
 <div class="hero-section">
-<img class="main_image" src="{{ url_for('static', filename='pexels-alleksana-6758382.jpg') }}">
-<div class="hero-text">
-    <h1>Welcome to our Foodies Restaurant</h1>
-    <p>Here at Foodies Restaurant, we serve the best dishes, offering a delightful experience for all food lovers. Come and explore our menu!</p>
+    <img class="main_image" src="{{ url_for('static', filename='pexels-alleksana-6758382.jpg') }}">
+    <div class="hero-text">
+        <h1>Welcome to SavorSuites Hotel & Restaurant</h1>
+        <p>Experience the perfect blend of comfort and cuisine. At SavorSuites, we offer luxurious rooms and a delicious variety of dishes to make your stay unforgettable. Use our chatbot to explore the menu, book rooms, or place an order anytime!</p>
+
+    </div>
 </div>
-</div>
+
+<!-- Menu Section -->
+<section id="menu" class="section" style="padding: 60px 20px; background-color: #f9f4f0;">
+    <h2 style="text-align: center;">Our Menu</h2>
+    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin-top: 30px;">
+        <div><h4>Breakfast</h4><img src="https://i.pinimg.com/originals/42/16/96/42169662954fe9f63605ce94abfd7509.png" width="300"></div>
+        <div><h4>Lunch</h4><img src="https://d3jmn01ri1fzgl.cloudfront.net/photoadking/webp_thumbnail/black-texture-lunch-menu-template-3esndgb083d16d.webp" width="300"></div>
+        <div><h4>Dinner</h4><img src="https://d3jmn01ri1fzgl.cloudfront.net/photoadking/webp_thumbnail/dark-dinner-menu-template-9aucozc29873ec.webp" width="300"></div>
+    </div>
+</section>
+
+<!-- About Section -->
+
+<section id="about" class="section" style="padding: 60px 20px;">
+    <h2 style="text-align: center;">About SavorSuites</h2>
+    <p style="max-width: 900px; margin: 20px auto; text-align: center;">
+        SavorSuites is more than just a hotel or a restaurant — it's an experience. Located in the heart of Karachi, our establishment brings together luxury hospitality and culinary excellence. Whether you're here for a cozy overnight stay or a fine dining experience, we ensure every guest is treated with warmth and personalized service.
+    </p>
+    <p style="max-width: 900px; margin: 20px auto; text-align: center;">
+        Our hotel features elegant rooms designed for comfort, complete with modern amenities, seamless check-in, and 24/7 chatbot assistance for all your needs. On the other hand, our restaurant is a haven for food lovers, serving a diverse menu that includes traditional Pakistani cuisine, continental delicacies, and gourmet dishes for every palate.
+    </p>
+    <p style="max-width: 900px; margin: 20px auto; text-align: center;">
+        At SavorSuites, we believe in integrating technology with hospitality. From digital reservations to instant chatbot support, everything is crafted to elevate your experience.
+    </p>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="section" style="padding: 60px 20px; background-color: #f2f2f2;">
+    <h2 style="text-align: center;">Contact Us</h2>
+    <p style="text-align: center;">Phone: +123-456-7890</p>
+    <p style="text-align: center;">Email: info@foodiesrestaurant.com</p>
+    <p style="text-align: center;">Location: 123 Gourmet Avenue, Karachi, Pakistan</p>
+</section>
+
+
+
 {% endblock %}
